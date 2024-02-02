@@ -126,8 +126,43 @@ def raggedness_matches(nt, size):
     end = nt._ragged_idx + 1
     nt_ragged = nt._size[:end]
     size_ragged = size[:end]
+
+    def are_equal(a, b):
+        a_is_sym = isinstance(a, torch.SymInt)
+        b_is_sym = isinstance(b, torch.SymInt)
+        if not a_is_sym and not b_is_sym:
+            return a == b or a == -1 or b == -1
+
+        # one is a SymInt
+        if a_is_sym != b_is_sym:
+            # assume this is fine
+            return True
+
+        # at this point, both are SymInts
+        from torch.fx.experimental.symbolic_shapes import is_singleton
+
+        # no singletons
+        a_is_singleton = is_singleton(a)
+        b_is_singleton = is_singleton(b)
+        if not a_is_singleton and not b_is_singleton:
+            return a == b
+
+        # one is a singleton
+        if a_is_singleton != b_is_singleton:
+            return False
+
+        def get_singleton_int(x):
+            # assumes we're given a symbolic or non-symbolic singleton
+            return (
+                x.node.hint.node.singleton_int()
+                if x.node.is_symbolic()
+                else x.node.singleton_int()
+            )
+
+        return get_singleton_int(a) == get_singleton_int(b)
+
     return len(nt_ragged) == len(size_ragged) and (
-        all(ns == s or s == -1 for ns, s in zip(nt_ragged, size_ragged))
+        all(are_equal(ns, s) for ns, s in zip(nt_ragged, size_ragged))
     )
 
 
@@ -380,7 +415,7 @@ def is_contiguous_general(func, *args, **kwargs):
     )
     if new_kwargs["memory_format"] == torch.preserve_format:
         return True
-    return is_contiguous_for_memory_format(inp.values(), **new_kwargs)
+    return is_contiguous_for_memory_format(inp._values, **new_kwargs)
 
 
 register_jagged_func(
@@ -997,3 +1032,81 @@ def embedding_default(func, *args, **kwargs):
     return NestedTensor(
         func(weight, indices._values, **new_kwargs), **extract_kwargs(indices)
     )
+
+
+@register_jagged_func(torch.ops.aten.values.default, "self: jt")
+def values_default(func, *args, **kwargs):
+    _, new_kwargs = normalize_function(
+        func, args=args, kwargs=kwargs, normalize_to_only_use_kwargs=True
+    )
+
+    inp = new_kwargs.pop("input")
+
+    # TODO: Handle inference mode properly.
+    # See https://github.com/pytorch/pytorch/issues/112024#issuecomment-1779554292
+    return inp._values.detach()
+
+
+@register_jagged_func(
+    torch.ops.aten._nested_view_from_values_offsets.default,
+    "values: t, offsets: t, dummy: jt_all",
+)
+def _nested_view_from_values_offsets_default(func, *args, **kwargs):
+    _, new_kwargs = normalize_function(
+        func, args=args, kwargs=kwargs, normalize_to_only_use_kwargs=True
+    )
+
+    values, offsets = new_kwargs["input"], new_kwargs["offsets"]
+
+    return NestedTensor(values, offsets)
+
+
+@register_jagged_func(
+    torch.ops.aten._nested_view_from_values_offsets_lengths.default,
+    "values: t, offsets: t, lengths: t, dummy: jt_all",
+)
+def _nested_view_from_values_offsets_lengths_default(func, *args, **kwargs):
+    _, new_kwargs = normalize_function(
+        func, args=args, kwargs=kwargs, normalize_to_only_use_kwargs=True
+    )
+
+    values, offsets, lengths = (
+        new_kwargs["input"],
+        new_kwargs["offsets"],
+        new_kwargs["lengths"],
+    )
+
+    return NestedTensor(values, offsets, lengths=lengths)
+
+
+@register_jagged_func(torch.ops.aten._nested_get_values.default, "self: jt_all")
+def _nested_get_values(func, *args, **kwargs):
+    _, new_kwargs = normalize_function(
+        func, args=args, kwargs=kwargs, normalize_to_only_use_kwargs=True
+    )
+
+    inp = new_kwargs.pop("input")
+    return inp._values.detach()
+
+
+@register_jagged_func(torch.ops.aten._nested_get_offsets.default, "self: jt_all")
+def _nested_get_offsets(func, *args, **kwargs):
+    _, new_kwargs = normalize_function(
+        func, args=args, kwargs=kwargs, normalize_to_only_use_kwargs=True
+    )
+
+    inp = new_kwargs.pop("input")
+    return inp._offsets
+
+
+@register_jagged_func(torch.ops.aten._nested_get_lengths.default, "self: jt_all")
+def _nested_get_lengths(func, *args, **kwargs):
+    _, new_kwargs = normalize_function(
+        func, args=args, kwargs=kwargs, normalize_to_only_use_kwargs=True
+    )
+
+    inp = new_kwargs.pop("input")
+    # if inp._lengths is None:
+    #     raise RuntimeError("no lengths metadata set for given nested tensor")
+
+    return inp._lengths

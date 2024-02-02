@@ -6129,6 +6129,60 @@
     CompositeExplicitAutogradNonFunctional: _nested_view_from_buffer_copy
   autogen: _nested_view_from_buffer_copy.out
 
+- func: _nested_view_from_values_offsets(Tensor(a) self, Tensor offsets, Tensor dummy) -> Tensor(a)
+  variants: function
+  device_check: NoCheck
+  dispatch:
+    CompositeExplicitAutograd: _nested_view_from_values_offsets
+
+- func: _nested_view_from_values_offsets_copy(Tensor self, Tensor offsets, Tensor dummy) -> Tensor
+  variants: function
+  device_check: NoCheck
+  tags: view_copy
+  dispatch:
+    CompositeExplicitAutogradNonFunctional: _nested_view_from_values_offsets_copy
+  autogen: _nested_view_from_values_offsets_copy.out
+
+- func: _nested_view_from_values_offsets_lengths(Tensor(a) self, Tensor offsets, Tensor lengths, Tensor dummy) -> Tensor(a)
+  variants: function
+  device_check: NoCheck
+  dispatch:
+    CompositeExplicitAutograd: _nested_view_from_values_offsets_lengths
+
+- func: _nested_view_from_values_offsets_lengths_copy(Tensor self, Tensor offsets, Tensor lengths, Tensor dummy) -> Tensor
+  variants: function
+  device_check: NoCheck
+  tags: view_copy
+  dispatch:
+    CompositeExplicitAutogradNonFunctional: _nested_view_from_values_offsets_lengths_copy
+  autogen: _nested_view_from_values_offsets_lengths_copy.out
+
+- func: _nested_get_values(Tensor(a) self) -> Tensor(a)
+  variants: function
+  device_check: NoCheck
+  dispatch:
+    NestedTensorCPU, NestedTensorCUDA: _nested_get_values
+
+- func: _nested_get_values_copy(Tensor self) -> Tensor
+  variants: function
+  device_check: NoCheck
+  tags: view_copy
+  dispatch:
+    CompositeExplicitAutogradNonFunctional: _nested_get_values_copy
+  autogen: _nested_get_values_copy.out
+
+- func: _nested_get_offsets(Tensor self) -> Tensor
+  variants: function
+  device_check: NoCheck
+  dispatch:
+    NestedTensorCPU, NestedTensorCUDA: _nested_get_offsets
+
+- func: _nested_get_lengths(Tensor self) -> Tensor
+  variants: function
+  device_check: NoCheck
+  dispatch:
+    NestedTensorCPU, NestedTensorCUDA: _nested_get_lengths
+
 - func: _trilinear(Tensor i1, Tensor i2, Tensor i3, int[] expand1, int[] expand2, int[] expand3, int[] sumdim, int unroll_dim=1) -> Tensor
   dispatch:
     # calls unsqueeze

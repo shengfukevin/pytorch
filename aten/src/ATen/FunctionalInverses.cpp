@@ -303,6 +303,44 @@ Tensor FunctionalInverses::_nested_view_from_buffer_inverse(const Tensor& base, 
     return Tensor();
 }
 
+Tensor FunctionalInverses::_nested_view_from_values_offsets_inverse(const Tensor& base, const Tensor& mutated_view, InverseReturnMode inverse_return_mode, const Tensor& offsets, const Tensor& dummy) {
+  auto values = at::_nested_get_values(mutated_view);
+  if (inverse_return_mode != InverseReturnMode::NeverView) {
+    return values;
+  } else {
+    return values.clone(/*memory_format=*/at::MemoryFormat::Contiguous);
+  }
+}
+
+Tensor FunctionalInverses::_nested_view_from_values_offsets_lengths_inverse(const Tensor& base, const Tensor& mutated_view, InverseReturnMode inverse_return_mode, const Tensor& offsets, const Tensor& lengths, const Tensor& dummy) {
+  // TODO: Does anything need to be done with lengths?
+  auto values = at::_nested_get_values(mutated_view);
+  if (inverse_return_mode != InverseReturnMode::NeverView) {
+    return values;
+  } else {
+    return values.clone(/*memory_format=*/at::MemoryFormat::Contiguous);
+  }
+}
+
+Tensor FunctionalInverses::_nested_get_values_inverse(const Tensor& base, const Tensor& mutated_view, InverseReturnMode inverse_return_mode) {
+  // TODO: Handle lengths here too.
+  auto lengths = at::_nested_get_lengths(base);
+  auto nt = Tensor();
+  if (lengths.defined()) {
+    nt = at::_nested_view_from_values_offsets_lengths(
+        mutated_view, at::_nested_get_offsets(base), lengths, base);
+  } else {
+    nt = at::_nested_view_from_values_offsets(
+        mutated_view, at::_nested_get_offsets(base), base);
+  }
+
+  if (inverse_return_mode != InverseReturnMode::NeverView) {
+    return nt;
+  } else {
+    return nt.clone(/*memory_format=*/at::MemoryFormat::Contiguous);
+  }
+}
+
 Tensor FunctionalInverses::unsqueeze_inverse(const Tensor& base, const Tensor& mutated_view, InverseReturnMode inverse_return_mode, int64_t dim) {
     if (inverse_return_mode != InverseReturnMode::NeverView) {
       return at::squeeze(mutated_view, dim);
