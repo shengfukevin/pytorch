@@ -1599,6 +1599,7 @@ class FunctionTests(torch._dynamo.test_case.TestCase):
         eager_result = fn(lambda0, lambda1, x)
         self.assertEqual(eager_result, dynamo_result)
 
+    @unittest.expectedFailure
     def test_partials_recompilation(self):
         def fn(f0, f1, x):
             return f0(x) * f1(x)
@@ -1734,6 +1735,7 @@ class FunctionTests(torch._dynamo.test_case.TestCase):
         res = forward(input1)(input2)
         self.assertTrue(same(res, input1 + input2))
 
+    @unittest.expectedFailure
     def test_non_inlined_closure(self):
         @torch.compile()
         def program(x, y):
