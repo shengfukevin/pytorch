@@ -7,6 +7,7 @@
 #include <torch/csrc/autograd/edge.h>
 #include <torch/csrc/autograd/forward_grad.h>
 #include <torch/csrc/autograd/function_hook.h>
+#include <torch/csrc/autograd/generated/ViewFuncs.h>
 
 #include <ATen/NamedTensorUtils.h>
 #include <ATen/core/Tensor.h>
@@ -331,7 +332,10 @@ struct TORCH_API ViewInfo {
   /// By default we use as_strided to recover views which is more efficient.
   /// view_fn is only saved when as_strided is not supported.
   /// If view_fn has value, we use it to recover views in backward.
-  std::function<Variable(const Variable&)> view_fn_;
+  /// NB: This is a shared_ptr because it may be copied into a CopySlices node
+  /// for view + in-place rebase handling.
+  std::shared_ptr<ViewFunc> view_fn_;
+
   /// Analogue of view_fn but in reverse: given a view -> produce the base by
   /// applying the inverse view.
   std::function<Variable(const Variable&)> rev_view_fn_;
@@ -342,7 +346,7 @@ struct TORCH_API ViewInfo {
     return view_fn_ != nullptr;
   }
 
-  std::function<Variable(const Variable&)> view_fn() const {
+  const std::shared_ptr<ViewFunc>& view_fn() const {
     TORCH_CHECK(
         has_view_fn(), "Can only access the view function if it exists.");
     return view_fn_;
@@ -366,12 +370,12 @@ struct TORCH_API ViewInfo {
   ViewInfo chain(
       const Variable& base,
       const Variable& tensor,
-      std::function<Variable(const Variable&)> view_func = nullptr,
+      std::shared_ptr<ViewFunc> view_func = nullptr,
       std::function<Variable(const Variable&)> rev_view_func = nullptr) const;
 
   ViewInfo(
       Variable base,
-      std::function<Variable(const Variable&)> view_fn,
+      std::shared_ptr<ViewFunc> view_fn,
       std::function<Variable(const Variable&)> rev_view_fn)
       : base_(std::move(base)),
         view_fn_(std::move(view_fn)),

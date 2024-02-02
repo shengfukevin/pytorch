@@ -160,7 +160,7 @@ inline at::Tensor as_view(
     const at::Tensor& tensor,
     bool is_bw_differentiable,
     bool is_fw_differentiable,
-    std::function<at::Tensor(const at::Tensor&)> view_func = nullptr,
+    std::shared_ptr<ViewFunc> view_func = nullptr,
     std::function<at::Tensor(const at::Tensor&)> rev_view_func = nullptr,
     CreationMeta creation_meta = CreationMeta::DEFAULT,
     bool allow_tensor_metadata_change = true) {
