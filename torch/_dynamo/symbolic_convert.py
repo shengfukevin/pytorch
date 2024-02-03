@@ -102,6 +102,7 @@ from .variables.misc import (
     InlinedClosureVariable,
     NullVariable,
     PythonModuleVariable,
+    SkipFilesVariable,
     UnknownVariable,
 )
 from .variables.nn_module import NNModuleVariable
@@ -2262,6 +2263,8 @@ class InliningInstructionTranslator(InstructionTranslatorBase):
 
     @staticmethod
     def check_inlineable(func):
+        if isinstance(func, SkipFilesVariable):
+            unimplemented("inline with functions in skip files")
         if func.has_self():
             unimplemented("inline with __self__")
 
@@ -2296,7 +2299,7 @@ class InliningInstructionTranslator(InstructionTranslatorBase):
     ):
         assert isinstance(
             func,
-            (UserFunctionVariable, NestedUserFunctionVariable),
+            (UserFunctionVariable, NestedUserFunctionVariable, SkipFilesVariable),
         )
         result = InliningInstructionTranslator.check_inlineable(func)
         assert result.skipped is False
