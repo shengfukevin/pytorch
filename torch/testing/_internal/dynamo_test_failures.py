@@ -859,47 +859,15 @@ dynamo_expected_failures = {
     "TestControlFlowTraced.test_map_functionalized",  # functorch/test_control_flow
     "TestControlFlowTraced.test_nested_map_cond_symbolic",  # functorch/test_control_flow
     "TestControlFlowTraced.test_nested_map_cond_real",  # functorch/test_control_flow
-    "TestJacCPU.test_against_reference_correctness_different_devices_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_against_reference_default_arg_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_against_reference_multi_input_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_against_reference_multi_input_multi_output_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_against_reference_simple_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_against_reference_unrelated_outputs_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_against_reference_zero_dim_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_argnums_defaults_to_zero_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_aux_pytree_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_chunk_jacrev_composition__preallocate_and_copy_False_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_chunk_jacrev_composition__preallocate_and_copy_True_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_dimensionality_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_empty_output_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_hessian_simple_cpu",  # functorch/test_eager_transforms.py
+    "TestJacCPU.test_vmap_on_jac_simple_jacfwd_cpu",  # functorch/test_eager_transforms.py
+    "TestJacCPU.test_vmap_on_jac_simple_jacrev_cpu",  # functorch/test_eager_transforms.py
     "TestJacCPU.test_inplace_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_jac_with_non_tensor_args_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_multiple_inputs_outputs_pytree_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_multiple_inputs_pytree_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_multiple_outputs_multiple_argnums_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_multiple_outputs_single_argnums_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_outputs_can_any_pytree_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_unrelated_input_jacfwd_cpu",  # functorch/test_eager_transforms.py
-    "TestJacCPU.test_unrelated_output_jacfwd_cpu",  # functorch/test_eager_transforms.py
     "TestVmapJvpInplaceViewCPU.test_all_dual_base_inplace_cpu",  # functorch/test_eager_transforms.py
     "TestVmapJvpInplaceViewCPU.test_all_dual_base_view_inplace_cpu",  # functorch/test_eager_transforms.py
     "TestVmapJvpInplaceViewCPU.test_all_dual_no_view_cpu",  # functorch/test_eager_transforms.py
     "TestVmapJvpInplaceViewCPU.test_right_dual_base_prop_cpu",  # functorch/test_eager_transforms.py
     "TestVmapJvpInplaceViewCPU.test_right_dual_view_prop_cpu",  # functorch/test_eager_transforms.py
-    "TestHessianCPU.test_hessian_vectorize_correctness_multi_input_cpu",  # functorch/test_eager_transforms.py
-    "TestHessianCPU.test_hessian_vectorize_correctness_simple_cpu",  # functorch/test_eager_transforms.py
-    "TestHessianCPU.test_hessian_vectorize_correctness_unrelated_outputs_cpu",  # functorch/test_eager_transforms.py
-    "TestHessianCPU.test_jacfwd_different_levels_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_ensemble_regression_mechanism_functional_call_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_ensemble_regression_mechanism_make_functional_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_find_learning_rate_ensembling_AlphaDropout_mechanism_functional_call_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_find_learning_rate_ensembling_AlphaDropout_mechanism_make_functional_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_find_learning_rate_ensembling_Dropout_mechanism_functional_call_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_find_learning_rate_ensembling_Dropout_mechanism_make_functional_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_find_learning_rate_ensembling_FeatureAlphaDropout_mechanism_functional_call_cpu",  # functorch/test_eager_transforms.py
-    "TestExamplesCorrectnessCPU.test_find_learning_rate_ensembling_FeatureAlphaDropout_mechanism_make_functional_cpu",  # functorch/test_eager_transforms.py
-    "TestHigherOrderOperatorInteractionCPU.test_vmap_grad_sum_cpu",  # functorch/test_eager_transforms.py
+    "TestGradTransformCPU.test_grad_of_vjp_composition_cpu",  # functorch/test_eager_transforms.py
     "TestFunctionalizeCPU.test_multioutput_view_cpu",  # functorch/test_eager_transforms.py
     "TestFunctionalizeCPU.test_simple_view_cpu",  # functorch/test_eager_transforms.py
     "TestFunctionalizeCPU.test_vmap_functionalize_jvp_cpu",  # functorch/test_eager_transforms.py
@@ -1483,7 +1451,6 @@ dynamo_expected_failures = {
     "TestAOTAutograd.test_input_data_and_metadata_mutation_aliases_other_input",  # functorch/test_aotdispatch
     "TestAOTAutograd.test_input_output_view_metadata_mutate_multiple",  # functorch/test_aotdispatch
     "TestAOTAutograd.test_input_data_and_metadata_mutation",  # functorch/test_aotdispatch
-    "TestPythonKeyCPU.test_make_fx_vjp_cpu",  # functorch/test_aotdispatch
     "TestPartitioning.test_min_cut_partitioner_output_tensor_shape_tensor",  # functorch/test_aotdispatch
     "TestAOTAutograd.test_input_output_view_simple",  # functorch/test_aotdispatch
     "TestAOTAutograd.test_output_aliases_intermediate_multi_output_view",  # functorch/test_aotdispatch
@@ -1516,7 +1483,6 @@ dynamo_expected_failures = {
     "TestAOTAutograd.test_invalid_dupe_fake",  # functorch/test_aotdispatch
     "TestAOTAutograd.test_output_aliases_intermediate_multiple",  # functorch/test_aotdispatch
     "TestAOTAutograd.test_input_mutation_alias_everything",  # functorch/test_aotdispatch
-    "TestPythonKeyCPU.test_make_fx_jacrev_cpu",  # functorch/test_aotdispatch
     "TestPartitioning.test_default_partitioner_output_tensor_shape_tensor",  # functorch/test_aotdispatch
     "TestPartitioning.test_contiguous",  # functorch/test_aotdispatch
     "TestAOTAutograd.test_outputs_are_aliased",  # functorch/test_aotdispatch

@@ -763,7 +763,9 @@ def clone_inputs(example_inputs):
 
 @contextmanager
 def preserve_rng_state():
-    with torch.utils._python_dispatch._disable_current_modes():
+    disable_functorch = torch._C._DisableFuncTorch
+    disable_current_modes = torch.utils._python_dispatch._disable_current_modes
+    with disable_current_modes(), disable_functorch():
         rng_state = torch.clone(torch.random.get_rng_state())
         if torch.cuda.is_available():
             cuda_rng_state = torch.clone(torch.cuda.get_rng_state())

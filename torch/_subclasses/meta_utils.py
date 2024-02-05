@@ -11,6 +11,8 @@ from torch._C._functorch import (
     current_level,
     get_unwrapped,
     is_batchedtensor,
+    is_functorch_wrapped_tensor,
+    is_gradtrackingtensor,
     maybe_get_bdim,
     maybe_get_level,
     peek_interpreter_stack,
@@ -133,7 +135,7 @@ class MetaConverter:
         # hold a weak ref to self, otherwise it will be kept alive
         # by the del_ten closure
         self_weak_ref = weakref.ref(self)
-        if t.is_sparse or t.is_mkldnn or is_batchedtensor(t):
+        if t.is_sparse or t.is_mkldnn or is_functorch_wrapped_tensor(t):
             weak_st = None
         else:
             weak_st = StorageWeakRef(t._typed_storage())
@@ -327,25 +329,34 @@ class MetaConverter:
                     if t.requires_grad and not is_leaf:
                         with torch.enable_grad():
                             r = r.clone()
-                elif is_batchedtensor(t):
-                    # Wraps a BatchedTensor in a FakeTensor
+                elif is_functorch_wrapped_tensor(t):
+                    # Wraps a functorch tensor class (BatchedTensor, GradTrackingTensor)
+                    # in a FakeTensor
                     def _to_fake_tensor(t):
                         if is_batchedtensor(t):
                             ft = _to_fake_tensor(get_unwrapped(t))
                             lvl = maybe_get_level(t)
                             bdim = maybe_get_bdim(t)
                             r = _add_batch_dim(ft, bdim, lvl)
+                        elif is_gradtrackingtensor(t):
+                            ft = _to_fake_tensor(get_unwrapped(t))
+                            assert is_gradtrackingtensor(ft) is False, ft
+                            lvl = torch._C._functorch.maybe_get_level(t)
+                            r = torch._C._functorch._wrap_for_grad(ft, lvl)
+
+                            is_leaf = safe_is_leaf(t)
+                            if t.requires_grad and safe_is_leaf(r):
+                                r.requires_grad = True
+                            if t.requires_grad and not is_leaf:
+                                with torch.enable_grad():
+                                    r = r.clone()
                         else:
-                            # regular tensor
-                            sizes = t.size()
-                            strides = t.stride()
-                            r = callback(
-                                lambda: torch.empty_strided(
-                                    sizes,
-                                    strides,
-                                    dtype=t.dtype,
-                                    device="meta",
-                                )
+                            r = self.meta_tensor(
+                                t,
+                                shape_env=shape_env,
+                                callback=callback,
+                                source=source,
+                                symbolic_context=symbolic_context,
                             )
                         return r
 
@@ -537,6 +548,7 @@ class MetaConverter:
                                 device="meta",
                             )
                         )
+
                     assert safe_is_leaf(r), "the callback you passed in doesn't detach"
                     if t.requires_grad:
                         r.requires_grad = t.requires_grad
@@ -549,8 +561,8 @@ class MetaConverter:
                                 r = r.clone(memory_format=torch.preserve_format)
 
                     # Graph-Break for wrapped tensors
-                    if not is_batchedtensor(
-                        t
+                    if not (
+                        is_batchedtensor(t) or is_gradtrackingtensor(t)
                     ) and torch._C._functorch.is_functorch_wrapped_tensor(t):
                         return NotImplemented
 
