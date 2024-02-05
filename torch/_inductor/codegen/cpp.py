@@ -270,6 +270,24 @@ def reduction_project(reduction_type, acc):
     return acc
 
 
+def is_to_lowp_dtype(expr):
+    to_exprs = ["cvt_fp32_to_lowp_fp", "c10::convert"]
+    if any(to_expr in expr for to_expr in to_exprs):
+        if "half" in expr:
+            return torch.half
+        if "bfloat16" in expr:
+            return torch.bfloat16
+    return None
+
+
+def get_lowp_to_fp32_expr(lowp_var, src_dtype, kernel):
+    if isinstance(kernel, CppVecKernel):
+        return f"cvt_lowp_fp_to_fp32<{DTYPE_TO_CPP[src_dtype]}>({lowp_var})"
+    else:
+        assert isinstance(kernel, CppKernel)
+        return f"c10::convert<float>({lowp_var})"
+
+
 index_value_name_counter = 1
 
 
@@ -969,6 +987,7 @@ class CppOverrides(OpOverrides):
         code.writeline(f"auto {left} = {x} > 0 ? {scalar_one} : {scalar_zero};")
         code.writeline(f"auto {right} = {x} < 0 ? {scalar_one} : {scalar_zero};")
         code.writeline(f"auto {result} = {left} - {right};")
+        V.kernel.cse.cache[f"auto {result} = {left} - {right};"] = result
         V.kernel.compute.splice(code)
         return result
 
@@ -1311,6 +1330,7 @@ class CppVecOverrides(CppOverrides):
         code.writeline(f"auto {right} = {blendv};")
         result = V.kernel.cse.newvar()
         code.writeline(f"auto {result} = {left} - {right};")
+        V.kernel.cse.cache[f"auto {result} = {left} - {right};"] = result
         V.kernel.compute.splice(code)
         return result
 
@@ -1483,6 +1503,45 @@ class CppKernel(Kernel):
         finally:
             self._load_mask = prior
 
+    def cache_fp32_cse_var_before_store(self, var_to_store):
+        """
+        https://github.com/pytorch/pytorch/issues/115260
+        For FusedSchedulerNode[node1, node2], the node2 might need to load node1's result
+        the node1's result might be lowp data type and node2 might need to cast node1's lowp dtype
+        to fp32 to do following computes. Thus we add a pair
+        {to_fp32_expr, node1's fp32 store cse var} in cse cache here to avoid the "to_dtype"
+        after node2's "load".
+        """
+
+        if var_to_store.dtype not in DTYPE_LOWP_FP:
+            # only need to cache fp32 cse var while var_to_store is lowp data
+            return
+
+        def find_fp32_var(var, cache):
+            fp32_cse_var = None
+            fp32_cse_var_name = None
+            lowp_dtype = None
+            for expr, cse_var in cache.items():
+                if cse_var == var:
+                    lowp_dtype = is_to_lowp_dtype(expr)
+                    if lowp_dtype:
+                        m = re.search(r"tmp\d+", expr)
+                        assert m
+                        fp32_cse_var_name = m.group()
+            if fp32_cse_var_name:
+                for cse_var in cache.values():
+                    if cse_var.name == fp32_cse_var_name:
+                        fp32_cse_var = cse_var
+                        break
+                assert fp32_cse_var is not None
+            return fp32_cse_var, lowp_dtype
+
+        fp32_var, lowp_dtype = find_fp32_var(var_to_store, self.cse.cache)
+        if fp32_var:
+            self.cse.cache[
+                get_lowp_to_fp32_expr(var_to_store, lowp_dtype, self)
+            ] = fp32_var
+
     def scale_index_with_offset(
         self, index: sympy.Expr, scale=1, itervar_idx=-1, offset=0
     ):
@@ -1527,6 +1586,7 @@ class CppKernel(Kernel):
     def store(self, name, index, value, mode=None):
         assert "buf" in name
         var = self.args.output(name)
+        self.cache_fp32_cse_var_before_store(value)
         index = self.rename_indexing(index)
         if mode is None:
             line = f"{var}[{cexpr_index(index)}] = {value};"
@@ -2013,6 +2073,7 @@ class CppVecKernel(CppKernel):
             value = self.broadcast(value)
         opt_ctx: OptimizationContext = get_current_node_opt_ctx()
         var = self.args.output(name)
+        self.cache_fp32_cse_var_before_store(value)
         index = self.rename_indexing(index)
         self.stores.writeline(
             DeferredLine(
